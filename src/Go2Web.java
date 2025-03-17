@@ -4,6 +4,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -94,6 +95,18 @@ public class Go2Web {
 
         } catch (IOException e) {
             return "Error connecting to server: " + e.getMessage();
+        }
+    }
+
+    private static void searchWeb(String[] args) {
+        try {
+            String query = String.join("+", Arrays.copyOfRange(args, 1, args.length));
+            String searchURL = "https://html.duckduckgo.com/html/?q=" + query;
+
+            System.out.println("[Search] " + searchURL);
+            fetchURL(searchURL, false);
+        } catch (Exception e) {
+            System.out.println("Error performing search: " + e.getMessage());
         }
     }
 
