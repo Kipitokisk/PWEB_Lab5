@@ -21,7 +21,7 @@ public class Go2Web {
         if (args[0].equals("-u") && args.length > 1) {
             fetchURL(args[1], false);
         } else if (args[0].equals("-s") && args.length > 1) {
-
+            searchWeb(args);
         } else {
             System.out.println("Invalid arguments! Use -h for help.");
         }
