@@ -39,6 +39,9 @@ public class Go2Web {
             URL parsedURL = new URL(url);
             String host = parsedURL.getHost();
             String path = parsedURL.getPath().isEmpty() ? "/" : parsedURL.getPath();
+            if (parsedURL.getQuery() != null) {
+                path += "?" + parsedURL.getQuery();
+            }
 
             if (cache.containsKey(url)) {
                 System.out.println("[Cache Hit] " + url);
@@ -50,11 +53,16 @@ public class Go2Web {
                     + "Host: " + host + "\r\n"
                     + "Connection: close\r\n"
                     + "Accept: text/html\r\n\r\n";
-
             String response = sendHttpRequest(host, 80, request);
 
-            if (!isRedirect && response.contains("HTTP/1.1 301") || response.contains("HTTP/1.1 302")) {
-                String newLocation = extractRedirectLocation(response);
+            // Split headers and body
+            String[] parts = response.split("\r\n\r\n", 2);
+            String headers = parts[0];
+            String body = parts.length > 1 ? parts[1] : "";
+
+            // Check for redirects
+            if (!isRedirect && (headers.contains("HTTP/1.1 301") || headers.contains("HTTP/1.1 302"))) {
+                String newLocation = extractRedirectLocation(headers);
                 if (newLocation != null) {
                     System.out.println("[Redirect] Following to: " + newLocation);
                     fetchURL(newLocation, true);
@@ -62,9 +70,8 @@ public class Go2Web {
                 }
             }
 
-            cache.put(url, response);
-
-            System.out.println(cleanHTML(response));
+            cache.put(url, body);
+            System.out.println(cleanHTML(body));
 
         } catch (Exception e) {
             System.out.println("Invalid URL: " + e.getMessage());
@@ -81,14 +88,8 @@ public class Go2Web {
 
             StringBuilder response = new StringBuilder();
             String line;
-            boolean headersEnded = false;
-
             while ((line = in.readLine()) != null) {
-                if (line.isEmpty()) {
-                    headersEnded = true;
-                    continue;
-                }
-                if (headersEnded) response.append(line).append("\n");
+                response.append(line).append("\r\n");
             }
 
             return response.toString();
@@ -101,7 +102,8 @@ public class Go2Web {
     private static void searchWeb(String[] args) {
         try {
             String query = String.join("+", Arrays.copyOfRange(args, 1, args.length));
-            String searchURL = "https://html.duckduckgo.com/html/?q=" + query;
+            // Using Bing search with HTTP
+            String searchURL = "http://www.bing.com/search?q=" + query;
 
             System.out.println("[Search] " + searchURL);
             fetchURL(searchURL, false);
@@ -111,12 +113,40 @@ public class Go2Web {
     }
 
     private static String cleanHTML(String html) {
-        return html.replaceAll("<[^>]*>", "").replaceAll("&\\w+;", " ");
+        StringBuilder output = new StringBuilder();
+
+        // For Bing search results
+        Pattern pattern = Pattern.compile("<h2><a href=\"(.*?)\".*?>(.*?)</a></h2>", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(html);
+
+        int count = 0;
+        while (matcher.find() && count < 10) { // Limit to top 10 results
+            String link = matcher.group(1).replace("&amp;", "&");
+            String title = matcher.group(2).replaceAll("<.*?>", "");
+
+            output.append(count + 1).append(". ").append(title).append("\n   Link: ").append(link).append("\n\n");
+            count++;
+        }
+
+        if (count == 0) {
+            // Simple HTML tag stripping for regular web pages
+            String plainText = html.replaceAll("<script.*?</script>", "")
+                    .replaceAll("<style.*?</style>", "")
+                    .replaceAll("<.*?>", " ")
+                    .replaceAll("\\s+", " ")
+                    .trim();
+
+            output.append(plainText);
+        }
+
+        return output.toString();
     }
 
-    private static String extractRedirectLocation(String response) {
-        Pattern pattern = Pattern.compile("Location: (.*?)\r\n");
-        Matcher matcher = pattern.matcher(response);
+
+
+    private static String extractRedirectLocation(String headers) {
+        Pattern pattern = Pattern.compile("Location: (.*?)\\r\\n", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(headers);
         return matcher.find() ? matcher.group(1) : null;
     }
 }
