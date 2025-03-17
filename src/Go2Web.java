@@ -1,7 +1,4 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.net.URL;
 import java.util.Arrays;
@@ -11,9 +8,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Go2Web {
+    private static final String CACHE_FILE = "go2web_cache.txt";
     private static final Map<String, String> cache = new HashMap<>();
 
     public static void main(String[] args) {
+        loadCache();
         if (args.length == 0 || args[0].equals("-h")) {
             printHelp();
         }
@@ -25,7 +24,52 @@ public class Go2Web {
         } else {
             System.out.println("Invalid arguments! Use -h for help.");
         }
+
+        saveCache();
     }
+
+    private static void loadCache() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(CACHE_FILE))) {
+            String line;
+            String currentUrl = null;
+            StringBuilder contentBuilder = new StringBuilder();
+
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("URL::")) {
+                    if (currentUrl != null) {
+                        cache.put(currentUrl, contentBuilder.toString());
+                        contentBuilder = new StringBuilder();
+                    }
+                    currentUrl = line.substring(5);
+                } else if (currentUrl != null) {
+                    contentBuilder.append(line).append("\n");
+                }
+            }
+
+            if (currentUrl != null) {
+                cache.put(currentUrl, contentBuilder.toString());
+            }
+
+            System.out.println("[Cache] Loaded " + cache.size() + " entries from file");
+        } catch (IOException e) {
+            System.out.println("[Cache] No existing cache file found. Creating new cache.");
+        }
+    }
+
+    private static void saveCache() {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(CACHE_FILE))) {
+            for (Map.Entry<String, String> entry : cache.entrySet()) {
+                writer.println("URL::" + entry.getKey());
+                if (!entry.getValue().isEmpty()) {
+                    writer.println(entry.getValue());
+                }
+            }
+            System.out.println("[Cache] Saved " + cache.size() + " entries to file");
+        } catch (IOException e) {
+            System.out.println("[Cache] Error saving cache: " + e.getMessage());
+        }
+    }
+
 
     private static void printHelp() {
         System.out.println("Usage:");
@@ -55,12 +99,10 @@ public class Go2Web {
                     + "Accept: text/html\r\n\r\n";
             String response = sendHttpRequest(host, 80, request);
 
-            // Split headers and body
             String[] parts = response.split("\r\n\r\n", 2);
             String headers = parts[0];
             String body = parts.length > 1 ? parts[1] : "";
 
-            // Check for redirects
             if (!isRedirect && (headers.contains("HTTP/1.1 301") || headers.contains("HTTP/1.1 302"))) {
                 String newLocation = extractRedirectLocation(headers);
                 if (newLocation != null) {
@@ -70,8 +112,9 @@ public class Go2Web {
                 }
             }
 
-            cache.put(url, body);
-            System.out.println(cleanHTML(body));
+            String cleanedBody = cleanHTML(body);
+            cache.put(url, cleanedBody);
+            System.out.println(cleanedBody);
 
         } catch (Exception e) {
             System.out.println("Invalid URL: " + e.getMessage());
@@ -99,10 +142,10 @@ public class Go2Web {
         }
     }
 
+
     private static void searchWeb(String[] args) {
         try {
             String query = String.join("+", Arrays.copyOfRange(args, 1, args.length));
-            // Using Bing search with HTTP
             String searchURL = "http://www.bing.com/search?q=" + query;
 
             System.out.println("[Search] " + searchURL);
