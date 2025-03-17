@@ -6,6 +6,7 @@ public class Go2Web {
 
     public static void main(String[] args) {
         if (args.length == 0 || args[0].equals("-h")) {
+            printHelp();
         }
 
         if (args[0].equals("-u") && args.length > 1) {
@@ -15,5 +16,12 @@ public class Go2Web {
         } else {
             System.out.println("Invalid arguments! Use -h for help.");
         }
+    }
+
+    private static void printHelp() {
+        System.out.println("Usage:");
+        System.out.println("  go2web -u <URL>         # Fetch a webpage");
+        System.out.println("  go2web -s <search-term> # Search using DuckDuckGo");
+        System.out.println("  go2web -h               # Show this help");
     }
 }
