@@ -15,14 +15,11 @@ The responses from request should be human-readable (e.g. no HTML tags in the ou
 ## Technologies Used
 - **Java** for main program
 - **Git & GitHub** for version control
-
+- **Windows Poweshell** for CLI
 ## Screenshots
-![Hero page desktop tailwindcss](screenshots/Hero_page_tailwindcss_desktop.PNG)
-![Hero page mobile tailwindcss](screenshots/Hero_page_tailwindcss_mobile.PNG)
-![About us page desktop tailwindcss](screenshots/About_us_page_tailwindcss_desktop.PNG)
-![About us page mobile tailwindcss](screenshots/About_us_page_tailwindcss_mobile.PNG)
+![-s command](screenshots/captur1.PNG)
+![-u command](screenshots/captur2.PNG)
+![cache hit](screenshots/captur3.PNG)
 
-## Live Demo
-[View the deployed project here](https://kipitokisk.github.io/WEB_Lab/)
-
-[View the live project in video format here](https://drive.google.com/file/d/1mx6u4-VgTDkohJlP2jz2jNFl-XRTVMwE/view?usp=sharing)
+## GIF
+![CLI gif](screenshots/lab5.gif)

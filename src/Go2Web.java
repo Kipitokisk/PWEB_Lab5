@@ -62,7 +62,7 @@ public class Go2Web {
                     writer.println(entry.getValue());
                 }
             }
-            System.out.println("[Cache] Saved " + cache.size() + " entries to file");
+            System.out.println("[Cache]" + cache.size() + " entries in cache file");
         } catch (IOException e) {
             System.out.println("[Cache] Error saving cache: " + e.getMessage());
         }
