@@ -8,7 +8,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Go2Web {
-    private static final String CACHE_FILE = "go2web_cache.txt";
     private static final Map<String, String> cache = new HashMap<>();
 
     public static void main(String[] args) {
@@ -18,18 +17,17 @@ public class Go2Web {
         }
 
         if (args[0].equals("-u") && args.length > 1) {
-            fetchURL(args[1], false);
+            fetchURL(args[1], false, false);
         } else if (args[0].equals("-s") && args.length > 1) {
             searchWeb(args);
         } else {
             System.out.println("Invalid arguments! Use -h for help.");
         }
-
         saveCache();
     }
 
     private static void loadCache() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(CACHE_FILE))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader("go2web_cache.txt"))) {
             String line;
             String currentUrl = null;
             StringBuilder contentBuilder = new StringBuilder();
@@ -57,7 +55,7 @@ public class Go2Web {
     }
 
     private static void saveCache() {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(CACHE_FILE))) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter("go2web_cache.txt"))) {
             for (Map.Entry<String, String> entry : cache.entrySet()) {
                 writer.println("URL::" + entry.getKey());
                 if (!entry.getValue().isEmpty()) {
@@ -78,7 +76,7 @@ public class Go2Web {
         System.out.println("  go2web -h               # Show this help");
     }
 
-    private static void fetchURL(String url, boolean isRedirect) {
+    private static void fetchURL(String url, boolean isRedirect, boolean isSearch) {
         try {
             URL parsedURL = new URL(url);
             String host = parsedURL.getHost();
@@ -99,22 +97,25 @@ public class Go2Web {
                     + "Accept: text/html\r\n\r\n";
             String response = sendHttpRequest(host, 80, request);
 
+            // Split headers and body
             String[] parts = response.split("\r\n\r\n", 2);
             String headers = parts[0];
             String body = parts.length > 1 ? parts[1] : "";
 
+            // Check for redirects
             if (!isRedirect && (headers.contains("HTTP/1.1 301") || headers.contains("HTTP/1.1 302"))) {
                 String newLocation = extractRedirectLocation(headers);
                 if (newLocation != null) {
                     System.out.println("[Redirect] Following to: " + newLocation);
-                    fetchURL(newLocation, true);
+                    fetchURL(newLocation, true, isSearch);
                     return;
                 }
             }
 
-            String cleanedBody = cleanHTML(body);
-            cache.put(url, cleanedBody);
-            System.out.println(cleanedBody);
+            if (!isSearch) {
+                cache.put(url, body);
+            }
+            System.out.println(cleanHTML(body));
 
         } catch (Exception e) {
             System.out.println("Invalid URL: " + e.getMessage());
@@ -142,14 +143,13 @@ public class Go2Web {
         }
     }
 
-
     private static void searchWeb(String[] args) {
         try {
             String query = String.join("+", Arrays.copyOfRange(args, 1, args.length));
             String searchURL = "http://www.bing.com/search?q=" + query;
 
             System.out.println("[Search] " + searchURL);
-            fetchURL(searchURL, false);
+            fetchURL(searchURL, false, true);
         } catch (Exception e) {
             System.out.println("Error performing search: " + e.getMessage());
         }
