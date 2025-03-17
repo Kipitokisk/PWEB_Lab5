@@ -24,4 +24,8 @@ public class Go2Web {
         System.out.println("  go2web -s <search-term> # Search using DuckDuckGo");
         System.out.println("  go2web -h               # Show this help");
     }
+
+    private static String cleanHTML(String html) {
+        return html.replaceAll("<[^>]*>", "").replaceAll("&\\w+;", " ");
+    }
 }
