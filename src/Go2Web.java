@@ -6,6 +6,8 @@ import java.net.Socket;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Go2Web {
     private static final Map<String, String> cache = new HashMap<>();
@@ -16,7 +18,7 @@ public class Go2Web {
         }
 
         if (args[0].equals("-u") && args.length > 1) {
-
+            fetchURL(args[1], false);
         } else if (args[0].equals("-s") && args.length > 1) {
 
         } else {
@@ -49,6 +51,15 @@ public class Go2Web {
                     + "Accept: text/html\r\n\r\n";
 
             String response = sendHttpRequest(host, 80, request);
+
+            if (!isRedirect && response.contains("HTTP/1.1 301") || response.contains("HTTP/1.1 302")) {
+                String newLocation = extractRedirectLocation(response);
+                if (newLocation != null) {
+                    System.out.println("[Redirect] Following to: " + newLocation);
+                    fetchURL(newLocation, true);
+                    return;
+                }
+            }
 
             cache.put(url, response);
 
@@ -88,5 +99,11 @@ public class Go2Web {
 
     private static String cleanHTML(String html) {
         return html.replaceAll("<[^>]*>", "").replaceAll("&\\w+;", " ");
+    }
+
+    private static String extractRedirectLocation(String response) {
+        Pattern pattern = Pattern.compile("Location: (.*?)\r\n");
+        Matcher matcher = pattern.matcher(response);
+        return matcher.find() ? matcher.group(1) : null;
     }
 }
