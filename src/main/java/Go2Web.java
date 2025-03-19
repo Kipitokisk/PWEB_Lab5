@@ -137,7 +137,7 @@ public class Go2Web {
                     headers.contains("HTTP/1.0 301") || headers.contains("HTTP/1.0 302") ||
                     headers.contains("HTTP/1.1 307") || headers.contains("HTTP/1.1 308")) {
 
-                String newLocation = extractRedirectLocation(headers);
+                String newLocation = host + extractRedirectLocation(headers);
                 if (newLocation != null) {
                     fetchURL(newLocation, redirectCount + 1, isSearch);
                     return;
